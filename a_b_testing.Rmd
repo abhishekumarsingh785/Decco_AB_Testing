@@ -1,0 +1,123 @@
+---
+title: "A/B Testing"
+---
+
+```{r}
+install.packages("pwr")
+library(pwr)
+
+```
+
+```{r}
+control = 0.101
+uplift = .2
+variant = (1 + uplift)*control
+effect_size <- ES.h(control, variant)
+sample_size_output <- pwr.p.test(h = effect_size,
+                                 n = ,
+                                 sig.level = 0.05,
+                                 power = 0.8)
+
+sample_size_output <- ceiling(sample_size_output$n)
+sample_size_output
+```
+```{r}
+df = read.csv("a_b_Test_Data.csv")
+```
+```{r}
+str(df)
+```
+
+```{r}
+summary(df[,c("active_6m", "addtocart_flag","transaction_flag", "uninstall_flag", 
+              "purchase_value", "days_since")])
+```
+
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+df %>% ggplot(aes(x = purchase_value)) +  
+  geom_histogram( color="#e9ecef", fill = "#E69F00", alpha=0.6, position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  labs(fill="")
+```
+
+```{r}
+df %>% ggplot(aes(x = purchase_value)) +  
+  geom_density( color="#E69F00")
+```
+```{r}
+df %>% ggplot(aes(x = days_since)) +  
+  geom_histogram( color="#e9ecef", fill = "#56B4E9", alpha=0.6, position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  labs(fill="")
+
+```
+
+```{r}
+df %>% ggplot(aes(x = days_since)) +  
+  geom_density( color="#56B4E9")
+```
+
+```{r}
+# Categorical variable stats
+table(df$allocation)
+table(df$allocation)/nrow(df)
+```
+
+```{r}
+# Check for randomization - baseline variables
+
+df %>% group_by(allocation) %>% summarise(mean(active_6m), mean(days_since))
+```
+
+```{r}
+# Compare distribution across the two groups
+
+df %>% ggplot(aes(x = days_since, fill = allocation)) +  
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity') +
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  labs(fill="")
+```
+
+
+```{r}
+# Compare performance of response variables across the two groups
+df %>% group_by(allocation) %>% summarise(mean(addtocart_flag), mean(transaction_flag), 
+                                              mean(purchase_value, na.rm = TRUE))
+
+
+
+```
+
+```{r}
+prop.test(xtabs(~ allocation + transaction_flag, data = df)[,2:1])
+```
+This is telling us that the treatment group performed between 7.8% and 6.9% better than the control group.
+
+
+```{r}
+prop.test(xtabs(~ allocation + addtocart_flag, data = df)[,2:1])
+```
+
+```{r}
+t.test(purchase_value ~ allocation, data = df)
+
+```
+
+```{r}
+#Checking for Uninstalls
+
+df %>% group_by(allocation) %>% summarise(mean(uninstall_flag))
+
+```
+
+```{r}
+prop.test(xtabs(~ allocation + uninstall_flag, data = df)[,2:1])
+```
+
+
